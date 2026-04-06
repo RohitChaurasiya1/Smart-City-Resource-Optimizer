@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Smart City Resource Optimizer — Delta Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --night:#03080f;
+  --deep:#060e1c;
+  --dark:#091828;
+  --panel:#0d2035;
+  --card:#0f2540;
+  --border:rgba(0,200,255,0.12);
+  --border2:rgba(0,200,255,0.22);
+  --glow:rgba(0,200,255,0.08);
+  --c1:#00c8ff;
+  --c2:#00ffb3;
+  --c3:#ffb800;
+  --c4:#ff4d6d;
+  --c5:#b44dff;
+  --text:#d0f0ff;
+  --muted:#5a8ea8;
+  --bright:#eefaff;
+  --font-head:'Orbitron',monospace;
+  --font-body:'Rajdhani',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--night);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:16px;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── Noise texture overlay ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.6;
+}
+
+/* ── Animated scanlines ── */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,200,255,0.012) 2px,rgba(0,200,255,0.012) 4px);
+  animation:scanMove 8s linear infinite;
+}
+@keyframes scanMove{from{background-position:0 0}to{background-position:0 100px}}
+
+/* ── Ambient blobs ── */
+.ambient{position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(120px);animation:blobFloat 20s ease-in-out infinite}
+.amb1{width:600px;height:600px;left:-200px;top:-100px;background:radial-gradient(circle,rgba(0,200,255,.07),transparent 70%);animation-duration:18s}
+.amb2{width:500px;height:500px;right:-150px;top:200px;background:radial-gradient(circle,rgba(0,255,179,.05),transparent 70%);animation-duration:22s;animation-direction:reverse}
+.amb3{width:400px;height:400px;left:30%;bottom:-100px;background:radial-gradient(circle,rgba(180,77,255,.04),transparent 70%);animation-duration:25s}
+@keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.06)}66%{transform:translate(-20px,25px) scale(0.96)}}
+
+.wrap{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 20px}
+
+/* ═══════════════ NAV ═══════════════ */
+.nav{
+  position:sticky;top:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  padding:11px 22px;
+  background:rgba(3,8,15,.85);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);
+}
+.nav-brand{
+  font-family:var(--font-head);
+  font-size:.95rem;font-weight:900;
+  color:var(--c1);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+}
+.nav-brand-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--c1);
+  box-shadow:0 0 10px var(--c1),0 0 20px var(--c1);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+.nav-links{display:flex;gap:4px;list-style:none;flex-wrap:wrap}
+.nav-links a{
+  font-family:var(--font-head);font-size:.65rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;
+  color:var(--muted);padding:8px 14px;border-radius:6px;
+  border:1px solid transparent;transition:.25s;
+}
+.nav-links a:hover{color:var(--c1);border-color:var(--border2);background:var(--glow)}
+
+.nav-badge{
+  font-family:var(--font-mono);font-size:.7rem;
+  background:rgba(0,200,255,.08);border:1px solid var(--border2);
+  color:var(--c1);padding:6px 12px;border-radius:4px;letter-spacing:1px;
+}
+
+/* ═══════════════ HERO ═══════════════ */
+.hero{
+  min-height:auto;display:grid;
+  grid-template-columns:1fr 1.1fr;
+  gap:0;align-items:stretch;
+}
+.hero-left{
+  padding:36px 40px 36px 28px;
+  display:flex;flex-direction:column;justify-content:center;
+  border-right:1px solid var(--border);
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-mono);font-size:.66rem;letter-spacing:2px;
+  color:var(--c2);background:rgba(0,255,179,.06);
+  border:1px solid rgba(0,255,179,.2);padding:5px 12px;border-radius:3px;
+  margin-bottom:16px;text-transform:uppercase;
+}
+.hero-tag::before{content:'●';animation:pulse 2s ease-in-out infinite;color:var(--c2)}
+.hero-h1{
+  font-family:var(--font-head);
+  font-size:clamp(1.6rem,2.8vw,2.4rem);
+  font-weight:900;line-height:1.05;
+  color:var(--bright);
+  margin-bottom:10px;
+  letter-spacing:-0.5px;
+}
+.hero-h1 .accent{
+  background:linear-gradient(90deg,var(--c1),var(--c2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  font-size:.9rem;line-height:1.7;color:var(--muted);
+  max-width:520px;margin-bottom:16px;
+}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.pill{
+  font-family:var(--font-mono);font-size:.7rem;letter-spacing:1px;
+  padding:7px 13px;border-radius:3px;
+  border:1px solid var(--border);color:var(--c1);
+  background:rgba(0,200,255,.04);
+  text-transform:uppercase;
+}
+.hero-team{
+  padding:14px 18px;border:1px solid var(--border);
+  background:rgba(0,200,255,.03);border-radius:8px;
+  margin-bottom:16px;
+}
+.hero-team h4{
+  font-family:var(--font-head);font-size:.7rem;letter-spacing:2px;
+  color:var(--c3);text-transform:uppercase;margin-bottom:12px;
+}
+.team-members{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.team-member{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.05);border-radius:6px;
+}
+.team-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--c1),var(--c5));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-head);font-size:.7rem;font-weight:700;color:#000;
+  flex-shrink:0;
+}
+.team-info{font-size:.85rem;line-height:1.4;color:var(--bright)}
+.team-info small{color:var(--muted);font-size:.75rem;font-family:var(--font-mono)}
+.team-group{
+  grid-column:1/-1;
+  font-family:var(--font-mono);font-size:.72rem;color:var(--c2);
+  padding:8px 12px;background:rgba(0,255,179,.04);
+  border:1px solid rgba(0,255,179,.1);border-radius:4px;
+  text-align:center;letter-spacing:1.5px;text-transform:uppercase;
+}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{
+  font-family:var(--font-head);font-size:.6rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;
+  padding:10px 16px;border-radius:5px;cursor:pointer;border:none;
+  transition:.25s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary{background:var(--c1);color:#000}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,200,255,.3)}
+.btn-secondary{background:rgba(0,200,255,.08);color:var(--c1);border:1px solid var(--border2)}
+.btn-secondary:hover{background:rgba(0,200,255,.14);transform:translateY(-2px)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--text);border:1px solid rgba(255,255,255,.07)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);transform:translateY(-2px)}
+.btn-gold{background:linear-gradient(135deg,var(--c3),#ff8800);color:#000}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,184,0,.3)}
+.btn-danger{background:rgba(255,77,109,.12);color:var(--c4);border:1px solid rgba(255,77,109,.2)}
+.btn-danger:hover{background:rgba(255,77,109,.2)}
+
+.hero-right{
+  position:relative;overflow:hidden;height:380px;
+  background:linear-gradient(180deg,#020c18 0%,#030f1f 100%);
+}
+/* Animated city skyline */
+.cityscape{position:absolute;inset:0;overflow:hidden}
+.sky-gradient{
+  position:absolute;top:0;left:0;right:0;height:60%;
+  background:linear-gradient(180deg,#01060f 0%,#021225 40%,#031a35 100%);
+}
+.stars-canvas{position:absolute;top:0;left:0;right:0;height:60%}
+.horizon-glow{
+  position:absolute;bottom:38%;left:0;right:0;height:80px;
+  background:linear-gradient(transparent,rgba(0,200,255,.06),transparent);
+}
+.ground{
+  position:absolute;bottom:0;left:0;right:0;
+  height:38%;background:linear-gradient(180deg,#050e1c,#030a14);
+}
+.road-main{
+  position:absolute;bottom:0;left:0;right:0;height:90px;
+  background:#040d1a;
+}
+.road-main::after{
+  content:'';position:absolute;left:0;right:0;top:50%;
+  transform:translateY(-50%);height:4px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0 30px,transparent 30px 50px);
+}
+/* Buildings */
+.bld-wrap{position:absolute;bottom:90px;left:0;right:0;display:flex;align-items:flex-end;gap:6px;padding:0 10px}
+.bld{
+  flex-shrink:0;border-radius:3px 3px 0 0;
+  background:linear-gradient(180deg,#0f2540,#081320);
+  border:1px solid rgba(0,200,255,.07);
+  position:relative;overflow:hidden;
+}
+.bld-windows{
+  position:absolute;inset:8px;
+  display:grid;gap:4px;
+}
+.bld-win{border-radius:1px;transition:opacity .5s}
+/* Data overlays on hero */
+.hero-stats-overlay{
+  position:absolute;top:20px;left:20px;right:20px;
+  display:flex;gap:10px;flex-wrap:wrap;
+  z-index:10;
+}
+.hero-stat{
+  background:rgba(3,8,15,.85);backdrop-filter:blur(12px);
+  border:1px solid var(--border2);border-radius:6px;
+  padding:7px 11px;
+}
+.hero-stat-val{
+  font-family:var(--font-head);font-size:.9rem;font-weight:700;
+  color:var(--c1);
+}
+.hero-stat-label{font-size:.62rem;color:var(--muted);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.vehicle-wrap{position:absolute;bottom:105px;left:0;right:0;height:40px;overflow:hidden}
+.vehicle-anim{position:absolute;font-size:1.8rem;bottom:0;animation:driveAcross 12s linear infinite}
+@keyframes driveAcross{0%{left:-60px}100%{left:calc(100% + 60px)}}
+
+/* ═══════════════ SECTION SHELL ═══════════════ */
+.section{padding:44px 0;border-top:1px solid var(--border)}
+.sec-label{
+  font-family:var(--font-mono);font-size:.7rem;letter-spacing:3px;
+  color:var(--c1);text-transform:uppercase;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.sec-label::before{content:'';flex:0 0 30px;height:1px;background:var(--c1)}
+.sec-title{
+  font-family:var(--font-head);font-size:clamp(1.2rem,2vw,1.7rem);
+  font-weight:900;color:var(--bright);margin-bottom:6px;letter-spacing:-0.3px;
+}
+.sec-desc{color:var(--muted);font-size:.9rem;line-height:1.65;max-width:700px}
+.sec-head{margin-bottom:22px}
+
+/* ═══════════════ TWO-COL LAYOUT ═══════════════ */
+.two-col{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+
+/* ═══════════════ PANEL CARD ═══════════════ */
+.pcard{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+}
+.pcard-head{
+  font-family:var(--font-head);font-size:.72rem;letter-spacing:2px;
+  color:var(--c1);text-transform:uppercase;
+  padding-bottom:12px;margin-bottom:16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.pcard-head::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--c1);box-shadow:0 0 8px var(--c1);
+  animation:pulse 2s ease-in-out infinite;
+}
+
+/* ── Form ── */
+label{
+  display:block;font-family:var(--font-mono);font-size:.72rem;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--c1);
+  margin-bottom:7px;margin-top:16px;
+}
+label:first-of-type{margin-top:0}
+input,textarea,select{
+  width:100%;padding:11px 14px;
+  background:rgba(0,0,0,.4);
+  border:1px solid var(--border);
+  border-radius:5px;color:var(--bright);
+  font-family:var(--font-mono);font-size:.82rem;
+  outline:none;transition:.25s;resize:vertical;
+}
+textarea{min-height:110px;line-height:1.6}
+input:focus,textarea:focus,select:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(0,200,255,.1)}
+.hint-text{font-size:.8rem;color:var(--muted);line-height:1.6;margin-top:8px;font-family:var(--font-mono)}
+
+.form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+
+.output-box{
+  margin-top:18px;padding:14px 16px;border-radius:7px;
+  background:rgba(0,200,255,.05);border:1px solid var(--border2);
+  color:var(--bright);font-size:.88rem;line-height:1.75;
+  font-family:var(--font-mono);
+}
+.output-box.error{background:rgba(255,77,109,.06);border-color:rgba(255,77,109,.18);color:#ffc0c9}
+.output-box strong{color:var(--c2)}
+
+/* ═══════════════ ROUTING VISUALS ═══════════════ */
+.map-container{
+  background:linear-gradient(180deg,#030c1b,#040f1e);
+  border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;position:relative;
+}
+.map-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:14px 18px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);
+}
+.map-toolbar-title{font-family:var(--font-head);font-size:.7rem;letter-spacing:2px;color:var(--c1);text-transform:uppercase}
+.map-live{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:.7rem;color:var(--c2);letter-spacing:1px}
+.map-live::before{content:'●';animation:pulse 1.5s ease-in-out infinite;color:var(--c2)}
+svg#cityMap{width:100%;height:520px;display:block}
+.mini-overlay{
+  position:absolute;bottom:16px;right:16px;
+  background:rgba(3,8,15,.92);backdrop-filter:blur(16px);
+  border:1px solid var(--border2);border-radius:8px;
+  padding:14px 16px;min-width:190px;z-index:10;
+}
+.mini-overlay h4{font-family:var(--font-head);font-size:.65rem;letter-spacing:2px;color:var(--c3);text-transform:uppercase;margin-bottom:8px}
+.mini-overlay p{font-size:.8rem;color:var(--text);line-height:1.5;font-family:var(--font-mono)}
+
+.dash-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.dcard{
+  padding:14px 16px;border-radius:7px;
+  background:var(--card);border:1px solid var(--border);
+}
+.dcard h5{font-family:var(--font-head);font-size:.62rem;letter-spacing:1.5px;color:var(--c3);text-transform:uppercase;margin-bottom:6px}
+.dcard p{font-size:.82rem;color:var(--text);line-height:1.5;font-family:var(--font-mono)}
+
+.legend-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;padding:10px 16px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:7px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--muted);font-family:var(--font-mono)}
+.ldot{width:10px;height:10px;border-radius:50%}
+
+/* ═══════════════ RESOURCE VISUALS ═══════════════ */
+.resource-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px}
+.res-card{
+  border-radius:8px;padding:16px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  transition:.3s;position:relative;overflow:hidden;cursor:default;
+}
+.res-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,200,255,.06),transparent);
+  opacity:0;transition:.3s;
+}
+.res-card.selected{
+  background:rgba(0,255,179,.06);
+  border-color:rgba(0,255,179,.35);
+  transform:translateY(-3px);
+  box-shadow:0 8px 30px rgba(0,255,179,.12);
+}
+.res-card.selected::before{opacity:1}
+.res-emoji{font-size:2.2rem;margin-bottom:8px;display:block}
+.res-name{font-weight:700;font-size:.88rem;color:var(--bright);margin-bottom:6px;font-family:var(--font-head);letter-spacing:.5px;font-size:.75rem}
+.res-meta{font-size:.77rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6}
+.res-badge{
+  position:absolute;top:8px;right:8px;
+  background:var(--c2);color:#000;
+  font-family:var(--font-head);font-size:.55rem;letter-spacing:1px;
+  padding:3px 7px;border-radius:3px;text-transform:uppercase;
+  opacity:0;transition:.3s;
+}
+.res-card.selected .res-badge{opacity:1}
+
+.cap-bar-wrap{padding:16px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:7px;margin-bottom:12px}
+.cap-bar-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-family:var(--font-mono);font-size:.78rem;color:var(--muted)}
+.cap-bar-track{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.cap-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:999px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.cap-text{font-family:var(--font-mono);font-size:.78rem;color:var(--c2);margin-top:8px}
+
+.truck-lane{
+  height:80px;position:relative;margin-bottom:12px;
+  border:1px solid var(--border);border-radius:7px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.4));
+}
+.truck-road2{
+  position:absolute;bottom:0;left:0;right:0;height:36px;
+  background:#040e1a;
+}
+.truck-road2::after{
+  content:'';position:absolute;top:50%;left:0;right:0;
+  transform:translateY(-50%);height:3px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0 24px,transparent 24px 40px);
+}
+.truck-emoji{position:absolute;font-size:1.8rem;bottom:14px;left:12px;transition:left 1.2s cubic-bezier(.4,0,.2,1)}
+
+.insight-box{
+  padding:14px 16px;border-radius:7px;
+  background:rgba(0,255,179,.04);border:1px solid rgba(0,255,179,.12);
+}
+.insight-box strong{color:var(--c2);font-family:var(--font-head);font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase}
+.insight-box p{font-size:.85rem;color:var(--text);line-height:1.65;margin-top:8px;font-family:var(--font-mono)}
+
+/* ═══════════════ SCHEDULING ═══════════════ */
+.timeline-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.t-slot{
+  padding:16px;border-radius:8px;min-height:130px;
+  background:rgba(255,255,255,.025);border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.t-slot::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:rgba(255,255,255,.06);
+}
+.t-slot.filled{background:rgba(255,184,0,.05);border-color:rgba(255,184,0,.22)}
+.t-slot.filled::after{background:linear-gradient(90deg,var(--c3),#ffe46a)}
+.t-slot-num{font-family:var(--font-mono);font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.t-slot-name{font-weight:700;color:var(--bright);font-size:.85rem;margin-bottom:6px;font-family:var(--font-head);font-size:.72rem;letter-spacing:.5px}
+.t-slot-meta{font-size:.78rem;color:var(--muted);font-family:var(--font-mono);line-height:1.5}
+.t-slot-profit{
+  display:inline-block;margin-top:8px;
+  background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.2);
+  color:var(--c3);padding:3px 8px;border-radius:3px;
+  font-family:var(--font-head);font-size:.65rem;letter-spacing:1px;
+}
+
+.profit-board{padding:18px;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.2)}
+.profit-board-title{font-family:var(--font-head);font-size:.7rem;letter-spacing:2px;color:var(--c3);text-transform:uppercase;margin-bottom:14px}
+.profit-bars{display:grid;gap:9px}
+.p-bar-row{display:grid;grid-template-columns:160px 1fr 60px;align-items:center;gap:10px;font-size:.8rem}
+.p-bar-name{color:var(--text);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-bar-track{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.p-bar-fill{height:100%;background:linear-gradient(90deg,var(--c3),#ffe46a);border-radius:999px;width:0;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.p-bar-val{font-family:var(--font-head);font-size:.72rem;color:var(--c3);text-align:right}
+
+/* ═══════════════ COMPLEXITY TABLE ═══════════════ */
+.table-wrap{
+  border:1px solid var(--border);border-radius:10px;overflow:hidden;
+}
+table{width:100%;border-collapse:collapse}
+thead{background:rgba(0,200,255,.05)}
+th{
+  font-family:var(--font-head);font-size:.65rem;letter-spacing:2px;
+  color:var(--c1);text-transform:uppercase;
+  padding:16px 18px;text-align:left;
+  border-bottom:1px solid var(--border);
+}
+td{
+  padding:16px 18px;font-size:.88rem;color:var(--text);
+  border-bottom:1px solid var(--border);
+  font-family:var(--font-mono);line-height:1.5;vertical-align:middle;
+}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:.2s}
+tbody tr:hover{background:rgba(0,200,255,.03)}
+.complexity-badge{
+  display:inline-block;padding:4px 10px;border-radius:3px;
+  font-family:var(--font-head);font-size:.65rem;letter-spacing:.5px;
+  font-weight:700;
+}
+.badge-graph{background:rgba(0,200,255,.1);color:var(--c1);border:1px solid rgba(0,200,255,.2)}
+.badge-dp{background:rgba(0,255,179,.08);color:var(--c2);border:1px solid rgba(0,255,179,.18)}
+.badge-greedy{background:rgba(255,184,0,.08);color:var(--c3);border:1px solid rgba(255,184,0,.18)}
+.complexity-big{
+  font-family:var(--font-mono);font-size:.85rem;
+  color:var(--bright);background:rgba(255,255,255,.04);
+  padding:4px 10px;border-radius:4px;display:inline-block;
+}
+
+/* ═══════════════ ALGORITHM EXPLAINER CARDS ═══════════════ */
+.algo-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+.algo-card{
+  padding:18px;border-radius:10px;border:1px solid var(--border);
+  background:var(--card);position:relative;overflow:hidden;
+}
+.algo-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+}
+.algo-card.graph::before{background:linear-gradient(90deg,var(--c1),transparent)}
+.algo-card.dp::before{background:linear-gradient(90deg,var(--c2),transparent)}
+.algo-card.greedy::before{background:linear-gradient(90deg,var(--c3),transparent)}
+.algo-icon{font-size:1.8rem;margin-bottom:8px}
+.algo-title{font-family:var(--font-head);font-size:.8rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.algo-card.graph .algo-title{color:var(--c1)}
+.algo-card.dp .algo-title{color:var(--c2)}
+.algo-card.greedy .algo-title{color:var(--c3)}
+.algo-desc{font-size:.85rem;color:var(--muted);line-height:1.7;font-family:var(--font-mono)}
+
+/* ═══════════════ SCENARIO SELECTOR ═══════════════ */
+.scenario-bar{
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;
+  padding:16px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:8px;
+}
+.scenario-bar-label{font-family:var(--font-head);font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;margin-right:4px}
+.scn-btn{
+  font-family:var(--font-head);font-size:.63rem;letter-spacing:1px;text-transform:uppercase;
+  padding:9px 16px;border-radius:5px;cursor:pointer;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--text);transition:.22s;
+}
+.scn-btn:hover,.scn-btn.active{background:rgba(0,200,255,.08);color:var(--c1);border-color:var(--border2)}
+
+/* ═══════════════ FOOTER ═══════════════ */
+.footer{
+  margin-top:0;padding:30px 40px;
+  border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+}
+.footer-brand{font-family:var(--font-head);font-size:.75rem;letter-spacing:2px;color:var(--c1);text-transform:uppercase}
+.footer-copy{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+
+/* ═══════════════ RESPONSIVE ═══════════════ */
+@media(max-width:1100px){
+  .two-col{grid-template-columns:1fr}
+  .algo-cards{grid-template-columns:1fr}
+  .dash-strip{grid-template-columns:1fr 1fr}
+}
+@media(max-width:820px){
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-left{padding:50px 24px}
+  .hero-right{height:380px}
+  .algo-cards{grid-template-columns:1fr}
+  .dash-strip{grid-template-columns:1fr}
+  .wrap{padding:0 14px}
+  .section{padding:50px 0}
+}
+
+/* ═══════════════ ANIMATIONS ═══════════════ */
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.anim-in{animation:fadeSlideUp .6s ease both}
+
+/* ── Glitch text effect on H1 ── */
+.glitch{position:relative;display:inline-block}
+.glitch::before,.glitch::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  font-family:var(--font-head);font-weight:900;
+}
+.glitch::before{color:rgba(0,200,255,.4);animation:glitch1 4s infinite;clip-path:polygon(0 0,100% 0,100% 40%,0 40%)}
+.glitch::after{color:rgba(0,255,179,.3);animation:glitch2 4s infinite;clip-path:polygon(0 60%,100% 60%,100% 100%,0 100%)}
+@keyframes glitch1{0%,94%,100%{transform:translate(0)}95%{transform:translate(-3px,1px)}97%{transform:translate(2px,-1px)}}
+@keyframes glitch2{0%,96%,100%{transform:translate(0)}97%{transform:translate(3px,-1px)}99%{transform:translate(-2px,1px)}}
+
+</style>
+</head>
+<body>
+<div class="ambient amb1"></div>
+<div class="ambient amb2"></div>
+<div class="ambient amb3"></div>
+
+<!-- ═════════════════════ NAV ═════════════════════ -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-dot"></div>
+    DELTA GROUP 
+  </div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#routing">Routing</a></li>
+    <li><a href="#allocation">Allocation</a></li>
+    <li><a href="#scheduling">Scheduling</a></li>
+    <li><a href="#complexity">Analysis</a></li>
+  </ul>
+  <div class="nav-badge" id="navClock">SYS ONLINE</div>
+</nav>
+
+<!-- ═════════════════════ HERO ═════════════════════ -->
+<section id="home" class="hero">
+  <div class="hero-left">
+    <div class="hero-tag anim-in">Design &amp; Analysis of Algorithms — Delta Group</div>
+    <h1 class="hero-h1 anim-in" style="animation-delay:.1s">
+      <span class="glitch" data-text="Smart City">Smart City</span><br>
+      <span class="accent">Resource</span><br>
+      Optimizer
+    </h1>
+    <p class="hero-sub anim-in" style="animation-delay:.2s">
+      A full-stack algorithmic dashboard applying <strong>Dijkstra's Shortest Path</strong>, <strong>0/1 Knapsack DP</strong>, and <strong>Greedy Job Scheduling</strong> to real-world smart city problems — emergency routing, resource allocation, and service scheduling.
+    </p>
+    <div class="hero-pills anim-in" style="animation-delay:.3s">
+      <div class="pill">Dijkstra Graph</div>
+      <div class="pill">0/1 Knapsack DP</div>
+      <div class="pill">Greedy Scheduling</div>
+      <div class="pill">Live Animation</div>
+      <div class="pill">O((V+E) log V)</div>
+    </div>
+    <div class="hero-team anim-in" style="animation-delay:.4s">
+      <h4>Presented By — Delta Group</h4>
+      <div class="team-members">
+        <div class="team-member">
+          <div class="team-avatar">RK</div>
+          <div class="team-info">Rohit Kumar Chaurasiya<small>Developer</small></div>
+        </div>
+        <div class="team-member">
+          <div class="team-avatar">VK</div>
+          <div class="team-info">Vicky Kumar Sah<small>Developer</small></div>
+        </div>
+        <div class="team-member">
+          <div class="team-avatar">RJ</div>
+          <div class="team-info">Roshan Jaiswal<small>Developer</small></div>
+        </div>
+        <div class="team-group">Δ Delta Group · B.Tech CSE</div>
+      </div>
+    </div>
+    <div class="btn-row anim-in" style="animation-delay:.5s">
+      <button class="btn btn-primary" onclick="applyScenario('emergency')">▶ Run Emergency Demo</button>
+      <button class="btn btn-secondary" onclick="applyScenario('rush')">Rush Hour</button>
+      <button class="btn btn-ghost" onclick="applyScenario('festival')">Festival Mode</button>
+      <button class="btn btn-gold" onclick="runAllModules()">⚡ Run All</button>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="cityscape">
+      <div class="sky-gradient"></div>
+      <canvas class="stars-canvas" id="starsCanvas"></canvas>
+      <div class="horizon-glow"></div>
+      <div class="hero-stats-overlay">
+        <div class="hero-stat"><div class="hero-stat-val" id="hv1">342</div><div class="hero-stat-label">Active Vehicles</div></div>
+        <div class="hero-stat"><div class="hero-stat-val" id="hv2">98.4%</div><div class="hero-stat-label">Grid Uptime</div></div>
+        <div class="hero-stat"><div class="hero-stat-val" id="hv3">1.2ms</div><div class="hero-stat-label">Route Latency</div></div>
+        <div class="hero-stat"><div class="hero-stat-val" id="hv4">7</div><div class="hero-stat-label">Active Routes</div></div>
+      </div>
+      <div class="bld-wrap" id="bldWrap"></div>
+      <div class="ground"></div>
+      <div class="road-main"></div>
+      <div class="vehicle-wrap">
+        <span class="vehicle-anim" style="animation-delay:0s">🚑</span>
+        <span class="vehicle-anim" style="animation-delay:4s;animation-duration:9s">🚒</span>
+        <span class="vehicle-anim" style="animation-delay:7s;animation-duration:14s">🚌</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════ ALGO EXPLAINERS ═════════════════════ -->
+<div class="wrap" style="padding-top:40px;padding-bottom:0">
+  <div class="algo-cards">
+    <div class="algo-card graph">
+      <div class="algo-icon">🗺️</div>
+      <div class="algo-title">Dijkstra's Algorithm</div>
+      <p class="algo-desc">Finds the shortest weighted path in a graph using a priority queue. Used here to route emergency vehicles through city road networks with minimal travel distance.</p>
+    </div>
+    <div class="algo-card dp">
+      <div class="algo-icon">🎒</div>
+      <div class="algo-title">0/1 Knapsack DP</div>
+      <p class="algo-desc">Dynamic Programming approach that maximizes total value of selected items without exceeding weight capacity. Used to allocate city emergency resources optimally.</p>
+    </div>
+    <div class="algo-card greedy">
+      <div class="algo-icon">📅</div>
+      <div class="algo-title">Greedy Job Scheduling</div>
+      <p class="algo-desc">Sorts city services by profit and greedily assigns them to time slots before their deadlines — guaranteeing maximum revenue from available service windows.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════ ROUTING ═════════════════════ -->
+<section id="routing" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Module 01</div>
+      <div class="sec-title">Emergency Route Optimization</div>
+      <p class="sec-desc">Dijkstra's algorithm finds the minimum-cost path through the city graph. Select a preset scenario or enter your own city topology to visualize the shortest path with animated vehicle movement.</p>
+    </div>
+
+    <div class="scenario-bar">
+      <span class="scenario-bar-label">Preset Scenarios →</span>
+      <button class="scn-btn" onclick="applyScenario('emergency')" id="scn-emergency">🚑 Emergency Response</button>
+      <button class="scn-btn" onclick="applyScenario('rush')" id="scn-rush">🚦 Rush Hour Traffic</button>
+      <button class="scn-btn" onclick="applyScenario('festival')" id="scn-festival">🎪 Festival Day</button>
+      <button class="scn-btn" onclick="applyScenario('flood')" id="scn-flood">🌊 Flood Evacuation</button>
+      <button class="scn-btn" onclick="applyScenario('night')" id="scn-night">🌙 Night Patrol</button>
+    </div>
+
+    <div class="two-col">
+      <div class="pcard">
+        <div class="pcard-head">Graph Configuration</div>
+        <label>City Nodes (comma-separated)</label>
+        <textarea id="locationsInput" rows="3"></textarea>
+        <label>Edges (source,destination,weight — one per line)</label>
+        <textarea id="roadsInput" rows="8"></textarea>
+        <label>Source Node</label>
+        <input id="sourceInput" placeholder="e.g. Hospital"/>
+        <label>Destination Node</label>
+        <input id="destinationInput" placeholder="e.g. Water Plant"/>
+        <p class="hint-text">💡 Tip: Load a preset scenario to see a fully configured example instantly.</p>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="runRouting()">Run Dijkstra</button>
+          <button class="btn btn-danger" onclick="clearRouting()">Clear</button>
+        </div>
+        <div id="routingBanner" class="output-box">Route output will appear here after running the algorithm.</div>
+        <div class="legend-row">
+          <div class="legend-item"><span class="ldot" style="background:#98ffd5"></span>Source/Dest</div>
+          <div class="legend-item"><span class="ldot" style="background:#ffd46a"></span>Best Path</div>
+          <div class="legend-item"><span class="ldot" style="background:#00c8ff"></span>Node</div>
+          <div class="legend-item"><span class="ldot" style="background:#b44dff"></span>Vehicle</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="map-container">
+          <div class="map-toolbar">
+            <div class="map-toolbar-title">Live City Map — Dijkstra Visualization</div>
+            <div class="map-live">LIVE</div>
+          </div>
+          <svg id="cityMap" viewBox="0 0 1100 680"></svg>
+          <div class="mini-overlay" id="miniMapInfo">
+            <h4>Scenario</h4>
+            <p>Select a preset scenario or enter custom data to begin.</p>
+          </div>
+        </div>
+        <div class="dash-strip">
+          <div class="dcard" id="routeInfoCard"><h5>Best Route</h5><p>Run algorithm to see path.</p></div>
+          <div class="dcard" id="distanceInfoCard"><h5>Total Distance</h5><p>Distance shown after run.</p></div>
+          <div class="dcard" id="nodeInfoCard"><h5>Nodes Visited</h5><p>Landmark count here.</p></div>
+          <div class="dcard" id="scenarioInfoCard"><h5>Scenario Info</h5><p>Scenario details here.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════ ALLOCATION ═════════════════════ -->
+<section id="allocation" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Module 02</div>
+      <div class="sec-title">Resource Allocation Optimization</div>
+      <p class="sec-desc">0/1 Knapsack dynamic programming selects the maximum-value combination of emergency resources without exceeding the city's supply vehicle capacity constraint.</p>
+    </div>
+    <div class="two-col">
+      <div class="pcard">
+        <div class="pcard-head">Knapsack Configuration</div>
+        <label>Resources (name,value,weight — one per line)</label>
+        <textarea id="resourcesInput" rows="10"></textarea>
+        <label>Vehicle Capacity Limit</label>
+        <input id="capacityInput" type="number" placeholder="e.g. 50"/>
+        <p class="hint-text">💡 Higher value-to-weight ratio items are more likely to be selected. The DP table guarantees the globally optimal selection.</p>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="runKnapsack()">Run Knapsack</button>
+          <button class="btn btn-secondary" onclick="loadResourceSet('standard')">Standard Set</button>
+          <button class="btn btn-ghost" onclick="loadResourceSet('disaster')">Disaster Set</button>
+          <button class="btn btn-danger" onclick="clearAllocation()">Clear</button>
+        </div>
+        <div id="allocationBanner" class="output-box">Allocation output will appear here.</div>
+      </div>
+      <div>
+        <div class="pcard" style="margin-bottom:14px">
+          <div class="pcard-head">Resource Selection Dashboard</div>
+          <div id="resourceGrid" class="resource-grid"></div>
+          <div class="cap-bar-wrap">
+            <div class="cap-bar-label"><span>Capacity Usage</span><span id="capPct">0%</span></div>
+            <div class="cap-bar-track"><div id="capacityFill" class="cap-bar-fill"></div></div>
+            <div class="cap-text" id="capacityText">Waiting for result…</div>
+          </div>
+          <div class="truck-lane">
+            <div class="truck-road2"></div>
+            <div id="truckEmoji" class="truck-emoji">🚚</div>
+          </div>
+          <div class="insight-box" id="resourceInsight">
+            <strong>Resource Insight</strong>
+            <p>Load a resource set and run the algorithm to see the optimal selection rationale.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════ SCHEDULING ═════════════════════ -->
+<section id="scheduling" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Module 03</div>
+      <div class="sec-title">City Service Scheduling</div>
+      <p class="sec-desc">Greedy job sequencing sorts city services by profit and assigns them to available time slots before their deadlines — maximizing total scheduled service revenue.</p>
+    </div>
+    <div class="two-col">
+      <div class="pcard">
+        <div class="pcard-head">Job Sequencing Configuration</div>
+        <label>Services (name,deadline,profit — one per line)</label>
+        <textarea id="jobsInput" rows="12"></textarea>
+        <p class="hint-text">💡 Deadline = latest time slot the job can be assigned to. Jobs sorted by descending profit — greedy picks highest profit first.</p>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="runScheduling()">Run Scheduling</button>
+          <button class="btn btn-secondary" onclick="loadSchedulingSet('standard')">Standard Set</button>
+          <button class="btn btn-ghost" onclick="loadSchedulingSet('mega')">Mega Demo</button>
+          <button class="btn btn-danger" onclick="clearScheduling()">Clear</button>
+        </div>
+        <div id="schedulingBanner" class="output-box">Scheduling output will appear here.</div>
+      </div>
+      <div class="pcard">
+        <div class="pcard-head">Service Timeline</div>
+        <div id="timeline" class="timeline-grid"></div>
+        <div class="profit-board">
+          <div class="profit-board-title">📊 Profit Distribution</div>
+          <div id="profitBars" class="profit-bars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════ COMPLEXITY ═════════════════════ -->
+<section id="complexity" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Module 04</div>
+      <div class="sec-title">Complexity Analysis</div>
+      <p class="sec-desc">Formal Big-O analysis of each algorithm — use this table during viva voce to justify the design decisions and computational trade-offs of the system.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Algorithm</th>
+            <th>Paradigm</th>
+            <th>Time Complexity</th>
+            <th>Space Complexity</th>
+            <th>Justification</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--bright)">Emergency Routing</strong></td>
+            <td>Dijkstra's Algorithm</td>
+            <td><span class="complexity-badge badge-graph">Graph</span></td>
+            <td><span class="complexity-big">O((V + E) log V)</span></td>
+            <td><span class="complexity-big">O(V + E)</span></td>
+            <td>Priority queue guarantees minimum-distance node extraction in O(log V). Optimal for sparse city road networks.</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--bright)">Resource Allocation</strong></td>
+            <td>0/1 Knapsack</td>
+            <td><span class="complexity-badge badge-dp">Dynamic Prog.</span></td>
+            <td><span class="complexity-big">O(n × W)</span></td>
+            <td><span class="complexity-big">O(n × W)</span></td>
+            <td>Builds a 2D DP table. Guarantees globally optimal selection — greedy would fail here due to non-fractional items.</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--bright)">Service Scheduling</strong></td>
+            <td>Job Sequencing with Deadlines</td>
+            <td><span class="complexity-badge badge-greedy">Greedy</span></td>
+            <td><span class="complexity-big">O(n log n + n·d)</span></td>
+            <td><span class="complexity-big">O(d)</span></td>
+            <td>Profit-based greedy sort + slot assignment. Provably optimal for maximizing profit in single-machine scheduling.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════ FOOTER ═════════════════════ -->
+<footer class="footer">
+  <div class="footer-brand">Smart City Resource Optimizer</div>
+  <div class="footer-copy">Delta Group · Design &amp; Analysis of Algorithms ·Delta Group</div>
+</footer>
+
+<!-- ═══════════════════════════ SCRIPT ═══════════════════════════ -->
+<script>
+/* ── Stars ── */
+(function(){
+  const c=document.getElementById('starsCanvas');
+  if(!c)return;
+  const ow=c.offsetWidth,oh=c.offsetHeight;
+  c.width=ow;c.height=oh;
+  const ctx=c.getContext('2d');
+  for(let i=0;i<160;i++){
+    const x=Math.random()*ow,y=Math.random()*oh;
+    const r=Math.random()*1.4+.2;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${180+Math.random()*75},${200+Math.random()*55},255,${.3+Math.random()*.7})`;
+    ctx.fill();
+  }
+})();
+
+/* ── Buildings ── */
+(function(){
+  const wrap=document.getElementById('bldWrap');if(!wrap)return;
+  const blds=[
+    {w:70,h:160,win:{cols:4,rows:9}},
+    {w:90,h:210,win:{cols:5,rows:12}},
+    {w:60,h:130,win:{cols:3,rows:7}},
+    {w:100,h:240,win:{cols:6,rows:14}},
+    {w:75,h:175,win:{cols:4,rows:10}},
+    {w:85,h:190,win:{cols:5,rows:11}},
+    {w:65,h:145,win:{cols:3,rows:8}},
+    {w:110,h:260,win:{cols:6,rows:15}},
+    {w:70,h:155,win:{cols:4,rows:9}},
+    {w:80,h:180,win:{cols:5,rows:10}},
+  ];
+  blds.forEach(b=>{
+    const el=document.createElement('div');
+    el.className='bld';
+    el.style.cssText=`width:${b.w}px;height:${b.h}px;flex-shrink:0`;
+    const winsEl=document.createElement('div');
+    winsEl.className='bld-windows';
+    winsEl.style.cssText=`grid-template-columns:repeat(${b.win.cols},1fr);grid-template-rows:repeat(${b.win.rows},1fr)`;
+    for(let r=0;r<b.win.rows*b.win.cols;r++){
+      const w=document.createElement('div');
+      w.className='bld-win';
+      const lit=Math.random()>.45;
+      w.style.background=lit?`rgba(${140+Math.random()*80},${160+Math.random()*80},255,${.5+Math.random()*.4})`:'rgba(0,0,0,0)';
+      w.style.borderRadius='1px';
+      if(lit){
+        const delay=Math.random()*8;
+        w.style.animation=`pulse ${2+Math.random()*4}s ease-in-out ${delay}s infinite`;
+      }
+      winsEl.appendChild(w);
+    }
+    el.appendChild(winsEl);wrap.appendChild(el);
+  });
+})();
+
+/* ── Clock ── */
+setInterval(()=>{
+  const n=document.getElementById('navClock');if(!n)return;
+  const t=new Date();
+  n.textContent=t.toLocaleTimeString('en-US',{hour12:false});
+},1000);
+
+/* ── Live hero stats ── */
+setInterval(()=>{
+  const el=document.getElementById('hv1');if(el)el.textContent=300+Math.floor(Math.random()*80);
+  const el2=document.getElementById('hv3');if(el2)el2.textContent=(0.8+Math.random()*0.8).toFixed(1)+'ms';
+},2500);
+
+/* ══════════ DATA ══════════ */
+const scenarioData={
+  emergency:{
+    name:'Emergency Response',
+    description:'Ambulance routing from Hospital to Water Plant support zone through city road network.',
+    vehicle:'🚑',
+    locations:'Hospital,Fire Station,Traffic Center,Residential Zone,Water Plant,School,Police HQ,Metro Hub',
+    roads:`Hospital,Fire Station,4\nHospital,Traffic Center,2\nTraffic Center,Fire Station,1\nFire Station,Residential Zone,3\nTraffic Center,Residential Zone,6\nResidential Zone,Water Plant,2\nTraffic Center,Water Plant,5\nHospital,School,7\nSchool,Residential Zone,2\nPolice HQ,Fire Station,2\nPolice HQ,Residential Zone,4\nMetro Hub,Traffic Center,2\nMetro Hub,Fire Station,2\nMetro Hub,Water Plant,3`,
+    source:'Hospital',destination:'Water Plant'
+  },
+  rush:{
+    name:'Rush Hour Traffic',
+    description:'Peak-hour road delays increase edge weights. Police HQ routes to School via the least-congested path.',
+    vehicle:'🚗',
+    locations:'Hospital,Fire Station,Traffic Center,Residential Zone,Water Plant,School,Police HQ,Metro Hub',
+    roads:`Hospital,Fire Station,7\nHospital,Traffic Center,5\nTraffic Center,Fire Station,3\nFire Station,Residential Zone,6\nTraffic Center,Residential Zone,8\nResidential Zone,Water Plant,4\nTraffic Center,Water Plant,7\nHospital,School,8\nSchool,Residential Zone,3\nPolice HQ,Fire Station,4\nPolice HQ,Residential Zone,6\nMetro Hub,Traffic Center,4\nMetro Hub,Fire Station,5\nMetro Hub,Water Plant,4`,
+    source:'Police HQ',destination:'School'
+  },
+  festival:{
+    name:'Festival Crowd Management',
+    description:'Crowd-heavy roads get higher weights. Police routes optimally from HQ to Water Plant for supply delivery.',
+    vehicle:'🚓',
+    locations:'Hospital,Fire Station,Traffic Center,Residential Zone,Water Plant,School,Police HQ,Metro Hub',
+    roads:`Hospital,Fire Station,5\nHospital,Traffic Center,3\nTraffic Center,Fire Station,2\nFire Station,Residential Zone,5\nTraffic Center,Residential Zone,7\nResidential Zone,Water Plant,3\nTraffic Center,Water Plant,4\nHospital,School,6\nSchool,Residential Zone,4\nPolice HQ,Fire Station,2\nPolice HQ,Residential Zone,7\nPolice HQ,Metro Hub,3\nMetro Hub,Traffic Center,2\nMetro Hub,Water Plant,5`,
+    source:'Police HQ',destination:'Water Plant'
+  },
+  flood:{
+    name:'Flood Evacuation',
+    description:'Flooded roads are impassable (removed). Rescue boat routes from Rescue Base to Shelter through available paths.',
+    vehicle:'🚤',
+    locations:'Rescue Base,Bridge A,Bridge B,Shelter,Medical Camp,School,High Ground,Emergency Hub',
+    roads:`Rescue Base,Bridge A,3\nRescue Base,Emergency Hub,5\nBridge A,Bridge B,2\nBridge A,School,4\nBridge B,Shelter,3\nBridge B,High Ground,6\nEmergency Hub,High Ground,4\nEmergency Hub,Medical Camp,3\nSchool,Medical Camp,2\nMedical Camp,Shelter,4\nHigh Ground,Shelter,3`,
+    source:'Rescue Base',destination:'Shelter'
+  },
+  night:{
+    name:'Night Patrol Route',
+    description:'Patrol car navigates night road closures and checkpoints to reach the Central Station from the North Precinct.',
+    vehicle:'🚔',
+    locations:'North Precinct,Checkpoint A,Checkpoint B,Central Station,South Market,East Zone,West Zone,Control Room',
+    roads:`North Precinct,Checkpoint A,2\nNorth Precinct,West Zone,4\nCheckpoint A,Checkpoint B,3\nCheckpoint A,Control Room,5\nCheckpoint B,Central Station,2\nCheckpoint B,East Zone,4\nControl Room,Central Station,3\nWest Zone,South Market,3\nSouth Market,Central Station,5\nEast Zone,Central Station,2\nControl Room,East Zone,2`,
+    source:'North Precinct',destination:'Central Station'
+  }
+};
+
+const nodePositions={
+  'Hospital':{x:130,y:120,icon:'🏥'},
+  'Fire Station':{x:800,y:120,icon:'🚒'},
+  'Traffic Center':{x:330,y:250,icon:'🚦'},
+  'Residential Zone':{x:820,y:390,icon:'🏠'},
+  'Water Plant':{x:560,y:500,icon:'💧'},
+  'School':{x:180,y:440,icon:'🏫'},
+  'Police HQ':{x:980,y:250,icon:'👮'},
+  'Metro Hub':{x:590,y:190,icon:'🚉'},
+  'Rescue Base':{x:120,y:130,icon:'🛟'},
+  'Bridge A':{x:350,y:220,icon:'🌉'},
+  'Bridge B':{x:580,y:310,icon:'🌉'},
+  'Shelter':{x:860,y:440,icon:'⛺'},
+  'Medical Camp':{x:650,y:180,icon:'🏥'},
+  'High Ground':{x:900,y:200,icon:'🏔️'},
+  'Emergency Hub':{x:220,y:360,icon:'🆘'},
+  'North Precinct':{x:160,y:110,icon:'🚔'},
+  'Checkpoint A':{x:370,y:200,icon:'🚧'},
+  'Checkpoint B':{x:600,y:270,icon:'🚧'},
+  'Central Station':{x:840,y:390,icon:'🏢'},
+  'South Market':{x:300,y:440,icon:'🏪'},
+  'East Zone':{x:820,y:200,icon:'🏙️'},
+  'West Zone':{x:160,y:340,icon:'🏘️'},
+  'Control Room':{x:540,y:130,icon:'📡'}
+};
+
+let currentVehicle='🚑';
+
+function $(id){return document.getElementById(id)}
+function applyScenario(key){
+  const s=scenarioData[key];
+  currentVehicle=s.vehicle||'🚑';
+  $('locationsInput').value=s.locations;
+  $('roadsInput').value=s.roads;
+  $('sourceInput').value=s.source;
+  $('destinationInput').value=s.destination;
+  $('miniMapInfo').innerHTML=`<h4>${s.name}</h4><p>${s.description}</p>`;
+  $('scenarioInfoCard').innerHTML=`<h5>Scenario Info</h5><p>${s.description}</p>`;
+  document.querySelectorAll('.scn-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('scn-'+key);if(btn)btn.classList.add('active');
+  loadResourceSet(key==='flood'||key==='festival'?'disaster':'standard');
+  loadSchedulingSet(key==='rush'||key==='night'?'mega':'standard');
+  runAllModules();
+}
+function runAllModules(){runRouting();runKnapsack();runScheduling()}
+
+function parseLocations(){return $('locationsInput').value.split(',').map(x=>x.trim()).filter(Boolean)}
+function parseRoads(){
+  return $('roadsInput').value.trim().split('\n').map(x=>x.trim()).filter(Boolean).map(line=>{
+    const p=line.split(',').map(s=>s.trim());
+    return {u:p[0],v:p[1],w:Number(p[2])};
+  });
+}
+
+function clearRouting(){
+  $('locationsInput').value='';$('roadsInput').value='';
+  $('sourceInput').value='';$('destinationInput').value='';
+  $('routingBanner').innerHTML='Route output will appear here after running the algorithm.';
+  $('routingBanner').classList.remove('error');
+  $('cityMap').innerHTML='';
+  ['routeInfoCard','distanceInfoCard','nodeInfoCard','scenarioInfoCard'].forEach(id=>$( id).querySelector('p').textContent='—');
+  $('miniMapInfo').innerHTML='<h4>Scenario</h4><p>Select a preset scenario or enter custom data.</p>';
+}
+
+/* ── Draw map ── */
+function drawCityBackground(svg){
+  const ns='http://www.w3.org/2000/svg';
+  // Grid
+  const defs=document.createElementNS(ns,'defs');
+  const pat=document.createElementNS(ns,'pattern');
+  pat.setAttribute('id','grid');pat.setAttribute('width','50');pat.setAttribute('height','50');
+  pat.setAttribute('patternUnits','userSpaceOnUse');
+  const pl1=document.createElementNS(ns,'line');pl1.setAttribute('x1','50');pl1.setAttribute('y1','0');pl1.setAttribute('x2','50');pl1.setAttribute('y2','50');pl1.setAttribute('stroke','rgba(0,200,255,0.04)');pl1.setAttribute('stroke-width','1');
+  const pl2=document.createElementNS(ns,'line');pl2.setAttribute('x1','0');pl2.setAttribute('y1','50');pl2.setAttribute('x2','50');pl2.setAttribute('y2','50');pl2.setAttribute('stroke','rgba(0,200,255,0.04)');pl2.setAttribute('stroke-width','1');
+  pat.appendChild(pl1);pat.appendChild(pl2);defs.appendChild(pat);svg.appendChild(defs);
+  const gridRect=document.createElementNS(ns,'rect');gridRect.setAttribute('width','100%');gridRect.setAttribute('height','100%');gridRect.setAttribute('fill','url(#grid)');svg.appendChild(gridRect);
+  // Park + lake
+  const park=document.createElementNS(ns,'ellipse');park.setAttribute('cx','600');park.setAttribute('cy','560');park.setAttribute('rx','220');park.setAttribute('ry','65');park.setAttribute('fill','rgba(0,255,120,0.05)');park.setAttribute('stroke','rgba(0,255,120,0.08)');park.setAttribute('stroke-width','1');svg.appendChild(park);
+  const lake=document.createElementNS(ns,'ellipse');lake.setAttribute('cx','870');lake.setAttribute('cy','555');lake.setAttribute('rx','110');lake.setAttribute('ry','42');lake.setAttribute('fill','rgba(0,200,255,0.07)');lake.setAttribute('stroke','rgba(0,200,255,0.1)');lake.setAttribute('stroke-width','1');svg.appendChild(lake);
+  // Road overlays
+  [['M40 170 Q270 130 520 210 T1060 240',38],['M120 570 Q300 440 500 440 T1040 370',30],['M530 40 Q545 220 560 620',22]].forEach(([d,w])=>{
+    const p=document.createElementNS(ns,'path');p.setAttribute('d',d);p.setAttribute('stroke','rgba(255,255,255,0.03)');p.setAttribute('stroke-width',w);p.setAttribute('fill','none');p.setAttribute('stroke-linecap','round');svg.appendChild(p);
+  });
+}
+
+function positionsFor(locations){
+  const pos={};const extras=[];
+  locations.forEach(loc=>nodePositions[loc]?pos[loc]={...nodePositions[loc]}:extras.push(loc));
+  const cx=540,cy=340,rx=330,ry=220;
+  extras.forEach((loc,i)=>{const a=(2*Math.PI*i)/Math.max(1,extras.length);pos[loc]={x:cx+rx*Math.cos(a),y:cy+ry*Math.sin(a),icon:'📍'}});
+  return pos;
+}
+
+function drawMap(locations,source,destination,path,distances){
+  const svg=$('cityMap');svg.innerHTML='';if(!locations.length)return;
+  const ns='http://www.w3.org/2000/svg';
+  const pos=positionsFor(locations);
+  const roads=parseRoads().filter(r=>pos[r.u]&&pos[r.v]&&!isNaN(r.w));
+  drawCityBackground(svg);
+  const pathEdges=new Set();
+  for(let i=0;i<path.length-1;i++){pathEdges.add(path[i]+'|||'+path[i+1]);pathEdges.add(path[i+1]+'|||'+path[i]);}
+
+  roads.forEach(r=>{
+    const a=pos[r.u],b=pos[r.v];const best=pathEdges.has(r.u+'|||'+r.v);
+    // Glow
+    const glow=document.createElementNS(ns,'line');
+    glow.setAttribute('x1',a.x);glow.setAttribute('y1',a.y);glow.setAttribute('x2',b.x);glow.setAttribute('y2',b.y);
+    glow.setAttribute('stroke',best?'rgba(255,184,0,.3)':'rgba(0,200,255,.05)');
+    glow.setAttribute('stroke-width',best?22:14);glow.setAttribute('stroke-linecap','round');svg.appendChild(glow);
+    // Main line
+    const line=document.createElementNS(ns,'line');
+    line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);
+    line.setAttribute('stroke',best?'#ffb800':'rgba(0,200,255,.25)');
+    line.setAttribute('stroke-width',best?5:3);line.setAttribute('stroke-linecap','round');
+    if(!best){line.setAttribute('stroke-dasharray','8 6')}
+    svg.appendChild(line);
+    // Weight label
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    const bg=document.createElementNS(ns,'rect');bg.setAttribute('x',mx-16);bg.setAttribute('y',my-13);bg.setAttribute('width',32);bg.setAttribute('height',20);bg.setAttribute('rx',5);bg.setAttribute('fill','rgba(3,8,15,.92)');bg.setAttribute('stroke','rgba(0,200,255,.15)');bg.setAttribute('stroke-width','1');svg.appendChild(bg);
+    const tx=document.createElementNS(ns,'text');tx.setAttribute('x',mx);tx.setAttribute('y',my+1);tx.setAttribute('text-anchor','middle');tx.setAttribute('fill',best?'#ffb800':'#5a8ea8');tx.setAttribute('font-size','11');tx.setAttribute('font-weight','700');tx.setAttribute('font-family','JetBrains Mono,monospace');tx.textContent=r.w;svg.appendChild(tx);
+  });
+
+  locations.forEach(loc=>{
+    const p=pos[loc];const isSource=loc===source;const isDest=loc===destination;const onPath=path.includes(loc);
+    // Halo
+    const halo=document.createElementNS(ns,'circle');halo.setAttribute('cx',p.x);halo.setAttribute('cy',p.y);halo.setAttribute('r',38);
+    halo.setAttribute('fill',onPath?'rgba(255,184,0,.07)':'rgba(0,200,255,.04)');svg.appendChild(halo);
+    // Ring
+    const ring=document.createElementNS(ns,'circle');ring.setAttribute('cx',p.x);ring.setAttribute('cy',p.y);ring.setAttribute('r',29);ring.setAttribute('fill','none');
+    ring.setAttribute('stroke',isSource||isDest?'rgba(0,255,179,.45)':onPath?'rgba(255,184,0,.35)':'rgba(0,200,255,.2)');
+    ring.setAttribute('stroke-width','1.5');ring.setAttribute('stroke-dasharray',onPath?'none':'4 3');svg.appendChild(ring);
+    // Circle fill
+    const c=document.createElementNS(ns,'circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',24);
+    c.setAttribute('fill',isSource||isDest?'#00ffb3':onPath?'#ffb800':'#0f2540');
+    c.setAttribute('stroke',isSource||isDest?'rgba(0,255,179,.6)':onPath?'rgba(255,184,0,.6)':'rgba(0,200,255,.3)');
+    c.setAttribute('stroke-width','2');svg.appendChild(c);
+    // Icon
+    const icon=document.createElementNS(ns,'text');icon.setAttribute('x',p.x);icon.setAttribute('y',p.y+7);icon.setAttribute('text-anchor','middle');icon.setAttribute('font-size','18');icon.textContent=p.icon||'📍';svg.appendChild(icon);
+    // Label bg
+    const lw=loc.length*7.5+12;
+    const lbg=document.createElementNS(ns,'rect');lbg.setAttribute('x',p.x-lw/2);lbg.setAttribute('y',p.y+34);lbg.setAttribute('width',lw);lbg.setAttribute('height',20);lbg.setAttribute('rx',4);lbg.setAttribute('fill','rgba(3,8,15,.85)');svg.appendChild(lbg);
+    const label=document.createElementNS(ns,'text');label.setAttribute('x',p.x);label.setAttribute('y',p.y+48);label.setAttribute('text-anchor','middle');label.setAttribute('fill',isSource||isDest?'#00ffb3':onPath?'#ffb800':'#d0f0ff');label.setAttribute('font-size','12');label.setAttribute('font-weight','700');label.setAttribute('font-family','JetBrains Mono,monospace');label.textContent=loc;svg.appendChild(label);
+    // Distance badge
+    if(distances[loc]!==undefined&&distances[loc]!==Infinity){
+      const db=document.createElementNS(ns,'rect');db.setAttribute('x',p.x-20);db.setAttribute('y',p.y-46);db.setAttribute('width',40);db.setAttribute('height',18);db.setAttribute('rx',4);db.setAttribute('fill','rgba(0,200,255,.12)');db.setAttribute('stroke','rgba(0,200,255,.25)');db.setAttribute('stroke-width','1');svg.appendChild(db);
+      const dt=document.createElementNS(ns,'text');dt.setAttribute('x',p.x);dt.setAttribute('y',p.y-34);dt.setAttribute('text-anchor','middle');dt.setAttribute('fill','#00ffb3');dt.setAttribute('font-size','11');dt.setAttribute('font-weight','700');dt.setAttribute('font-family','JetBrains Mono,monospace');dt.textContent='d='+distances[loc];svg.appendChild(dt);
+    }
+  });
+
+  if(path.length>1)animateVehicle(path,pos,currentVehicle);
+}
+
+function animateVehicle(path,pos,vehicleEmoji){
+  const svg=$('cityMap');const ns='http://www.w3.org/2000/svg';
+  const marker=document.createElementNS(ns,'text');marker.setAttribute('font-size','24');marker.textContent=vehicleEmoji||'🚑';svg.appendChild(marker);
+  const points=path.map(n=>pos[n]);const segs=[];for(let i=0;i<points.length-1;i++)segs.push([points[i],points[i+1]]);
+  let seg=0,t=0;
+  function step(){
+    if(!segs.length||seg>=segs.length)return;
+    const [a,b]=segs[seg];const x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+    marker.setAttribute('x',x-12);marker.setAttribute('y',y-14);
+    t+=0.012;if(t>1){t=0;seg++;if(seg>=segs.length){setTimeout(()=>{seg=0;requestAnimationFrame(step)},600);return}}
+    requestAnimationFrame(step);
+  }step();
+}
+
+function runRouting(){
+  const banner=$('routingBanner');
+  try{
+    const locations=parseLocations(),roads=parseRoads();
+    const source=$('sourceInput').value.trim(),destination=$('destinationInput').value.trim();
+    if(!locations.length)throw new Error('Enter city node names.');
+    if(!source||!destination)throw new Error('Enter both source and destination.');
+    if(!locations.includes(source)||!locations.includes(destination))throw new Error('Source/destination must be in the node list.');
+    const graph={};locations.forEach(loc=>graph[loc]=[]);
+    roads.forEach(({u,v,w})=>{if(!u||!v||isNaN(w)||w<0||!graph[u]||!graph[v])throw new Error('Invalid edge: '+u+'→'+v);graph[u].push({node:v,weight:w});graph[v].push({node:u,weight:w});});
+    const dist={},prev={},used=new Set();
+    locations.forEach(loc=>{dist[loc]=Infinity;prev[loc]=null});dist[source]=0;
+    while(used.size<locations.length){
+      let cur=null,best=Infinity;
+      for(const loc of locations){if(!used.has(loc)&&dist[loc]<best){best=dist[loc];cur=loc}}
+      if(cur===null)break;used.add(cur);
+      graph[cur].forEach(({node,weight})=>{const nd=dist[cur]+weight;if(nd<dist[node]){dist[node]=nd;prev[node]=cur}});
+    }
+    if(dist[destination]===Infinity)throw new Error('No path found between '+source+' and '+destination+'.');
+    const path=[];let temp=destination;while(temp!==null){path.push(temp);temp=prev[temp]}path.reverse();
+    drawMap(locations,source,destination,path,dist);
+    banner.classList.remove('error');
+    banner.innerHTML=`<strong>✅ Shortest Path Found</strong><br>From: <strong>${source}</strong> → <strong>${destination}</strong><br>Minimum Distance: <strong>${dist[destination]} units</strong><br>Route: <strong>${path.join(' → ')}</strong><br>Nodes on path: <strong>${path.length}</strong>`;
+    $('routeInfoCard').innerHTML=`<h5>Best Route</h5><p>${path.join(' → ')}</p>`;
+    $('distanceInfoCard').innerHTML=`<h5>Total Distance</h5><p>${dist[destination]} units</p>`;
+    $('nodeInfoCard').innerHTML=`<h5>Nodes Visited</h5><p>${path.length} landmark${path.length!==1?'s':''} on path</p>`;
+  }catch(e){banner.classList.add('error');banner.textContent='⚠ '+e.message;$('cityMap').innerHTML=''}
+}
+
+/* ══════════ KNAPSACK ══════════ */
+const resourceSets={
+  standard:{
+    items:`Ambulance,60,10\nMedical Kits,100,20\nWater Tanker,120,30\nRepair Vehicle,80,15\nDrone Unit,50,10\nFood Supply Van,70,18\nRescue Boat,90,22\nPortable Generator,65,14`,
+    capacity:50
+  },
+  disaster:{
+    items:`Ambulance,60,10\nMedical Kits,100,20\nWater Tanker,120,30\nRepair Vehicle,80,15\nDrone Unit,50,10\nFood Supply Van,70,18\nRescue Boat,90,22\nPortable Generator,65,14\nShelter Tent Kit,95,24\nEmergency Radio Pack,55,9\nBlood Supply,110,16\nSearch Light,45,8`,
+    capacity:65
+  }
+};
+
+const itemEmoji={
+  'Ambulance':'🚑','Medical Kits':'🩺','Water Tanker':'🚰','Repair Vehicle':'🛠️',
+  'Drone Unit':'🛸','Food Supply Van':'🚐','Rescue Boat':'🚤','Portable Generator':'🔋',
+  'Shelter Tent Kit':'⛺','Emergency Radio Pack':'📻','Blood Supply':'🩸','Search Light':'🔦'
+};
+
+function loadResourceSet(type){
+  const s=resourceSets[type]||resourceSets.standard;
+  $('resourcesInput').value=s.items;$('capacityInput').value=s.capacity;
+  renderResources([],[]);$('capacityFill').style.width='0%';$('capPct').textContent='0%';
+  $('capacityText').textContent='Waiting for result…';$('truckEmoji').style.left='12px';
+  $('resourceInsight').querySelector('p').textContent='Load a resource set and run the algorithm to see the optimal selection rationale.';
+}
+
+function clearAllocation(){
+  $('resourcesInput').value='';$('capacityInput').value='';
+  $('allocationBanner').innerHTML='Allocation output will appear here.';$('allocationBanner').classList.remove('error');
+  renderResources([],[]);$('capacityFill').style.width='0%';$('capPct').textContent='0%';$('capacityText').textContent='Waiting for result…';$('truckEmoji').style.left='12px';
+}
+
+function parseResources(){
+  return $('resourcesInput').value.trim().split('\n').map(x=>x.trim()).filter(Boolean).map(line=>{
+    const [name,value,weight]=line.split(',').map(s=>s.trim());
+    return {name,value:Number(value),weight:Number(weight)};
+  });
+}
+
+function renderResources(items,selected){
+  const grid=$('resourceGrid');grid.innerHTML='';if(!items.length)return;
+  items.forEach(item=>{
+    const div=document.createElement('div');
+    div.className='res-card'+(selected.includes(item.name)?' selected':'');
+    div.innerHTML=`<span class="res-emoji">${itemEmoji[item.name]||'📦'}</span><div class="res-name">${item.name}</div><div class="res-meta">Value: <strong style="color:var(--c2)">${item.value}</strong><br>Weight: <strong style="color:var(--c3)">${item.weight}</strong></div><div class="res-badge">✓ Selected</div>`;
+    grid.appendChild(div);
+  });
+  const pct=Math.min(82,8+selected.length*9);$('truckEmoji').style.left=pct+'%';
+}
+
+function runKnapsack(){
+  const banner=$('allocationBanner');
+  try{
+    const items=parseResources(),capacity=Number($('capacityInput').value);
+    if(!items.length)throw new Error('Enter resource data.');
+    if(isNaN(capacity)||capacity<=0)throw new Error('Enter a valid capacity limit.');
+    items.forEach(x=>{if(!x.name||isNaN(x.value)||isNaN(x.weight)||x.weight<=0||x.value<0)throw new Error('Invalid resource entry: '+x.name)});
+    const n=items.length;const dp=Array.from({length:n+1},()=>Array(capacity+1).fill(0));
+    for(let i=1;i<=n;i++)for(let w=0;w<=capacity;w++)dp[i][w]=items[i-1].weight<=w?Math.max(dp[i-1][w],items[i-1].value+dp[i-1][w-items[i-1].weight]):dp[i-1][w];
+    let w=capacity;const chosen=[];
+    for(let i=n;i>0;i--)if(dp[i][w]!==dp[i-1][w]){chosen.push(items[i-1]);w-=items[i-1].weight}chosen.reverse();
+    const selected=chosen.map(x=>x.name),totalWeight=chosen.reduce((s,x)=>s+x.weight,0),totalValue=chosen.reduce((s,x)=>s+x.value,0);
+    renderResources(items,selected);
+    const pct=Math.min(100,Math.round((totalWeight/capacity)*100));
+    setTimeout(()=>{$('capacityFill').style.width=pct+'%';$('capPct').textContent=pct+'%';},50);
+    $('capacityText').textContent=`Used ${totalWeight} / ${capacity} capacity (${pct}%)`;
+    banner.classList.remove('error');
+    banner.innerHTML=`<strong>✅ Optimal Allocation Found</strong><br>Max Value: <strong>${dp[n][capacity]}</strong><br>Weight Used: <strong>${totalWeight} / ${capacity}</strong><br>Selected: <strong>${selected.join(', ')||'None'}</strong>`;
+    $('resourceInsight').querySelector('p').textContent=`The 0/1 Knapsack DP selected ${selected.length} resource${selected.length!==1?'s':''} with combined value ${totalValue} — the globally optimal combination for capacity ${capacity}.`;
+  }catch(e){banner.classList.add('error');banner.textContent='⚠ '+e.message;renderResources([],[]);}
+}
+
+/* ══════════ SCHEDULING ══════════ */
+const schedulingSets={
+  standard:`Garbage Collection,2,100\nRoad Repair,1,50\nStreet Light Maintenance,2,10\nWater Supply Check,1,20\nAmbulance Inspection,3,70\nDrainage Cleaning,2,60\nPark Cleaning,3,40\nSignal Monitoring,1,30`,
+  mega:`Garbage Collection,2,100\nRoad Repair,1,50\nStreet Light Maintenance,2,10\nWater Supply Check,1,20\nAmbulance Inspection,3,70\nDrainage Cleaning,2,60\nPark Cleaning,3,40\nSignal Monitoring,1,30\nBridge Safety Check,4,90\nMetro Station Cleaning,3,55\nTraffic Camera Maintenance,2,45\nSchool Zone Monitoring,4,65\nWater Pipe Inspection,3,75\nPublic Park Watering,2,35\nEmergency Generator Check,1,85\nBus Stop Maintenance,4,50\nHospital Supply Delivery,5,95\nFire Hydrant Inspection,3,68\nSmart Pole Repair,2,58\nResidential Waste Pickup,4,72`
+};
+
+function loadSchedulingSet(type){
+  $('jobsInput').value=schedulingSets[type]||schedulingSets.standard;
+  renderTimeline([]);renderProfitBars([]);
+}
+function clearScheduling(){
+  $('jobsInput').value='';$('schedulingBanner').innerHTML='Scheduling output will appear here.';$('schedulingBanner').classList.remove('error');
+  renderTimeline([]);renderProfitBars([]);
+}
+function parseJobs(){
+  return $('jobsInput').value.trim().split('\n').map(x=>x.trim()).filter(Boolean).map(line=>{
+    const [name,deadline,profit]=line.split(',').map(s=>s.trim());
+    return {name,deadline:Number(deadline),profit:Number(profit)};
+  });
+}
+function renderTimeline(slots){
+  const tl=$('timeline');tl.innerHTML='';if(!slots.length)return;
+  slots.forEach((job,i)=>{
+    const div=document.createElement('div');
+    div.className='t-slot'+(job?' filled':'');
+    div.innerHTML=`<div class="t-slot-num">Slot ${i+1}</div>`+(job
+      ?`<div class="t-slot-name">${job.name}</div><div class="t-slot-meta">Deadline: ${job.deadline}</div><div class="t-slot-profit">+${job.profit}</div>`
+      :`<div class="t-slot-meta" style="color:rgba(90,142,168,.5)">— Empty —</div>`);
+    tl.appendChild(div);
+  });
+}
+function renderProfitBars(jobs){
+  const board=$('profitBars');board.innerHTML='';if(!jobs.length)return;
+  const max=Math.max(...jobs.map(j=>j.profit),1);
+  jobs.forEach(job=>{
+    const row=document.createElement('div');row.className='p-bar-row';
+    row.innerHTML=`<div class="p-bar-name">${job.name}</div><div class="p-bar-track"><div class="p-bar-fill" style="width:0%" data-target="${(job.profit/max)*100}"></div></div><div class="p-bar-val">${job.profit}</div>`;
+    board.appendChild(row);
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('.p-bar-fill').forEach(el=>{el.style.width=el.dataset.target+'%'});
+  },80);
+}
+function runScheduling(){
+  const banner=$('schedulingBanner');
+  try{
+    const jobs=parseJobs();if(!jobs.length)throw new Error('Enter jobs data.');
+    jobs.forEach(j=>{if(!j.name||isNaN(j.deadline)||isNaN(j.profit)||j.deadline<=0||j.profit<0)throw new Error('Invalid job: '+j.name)});
+    jobs.sort((a,b)=>b.profit-a.profit);
+    const maxDeadline=Math.max(...jobs.map(j=>j.deadline));
+    const slots=Array(maxDeadline).fill(null);let totalProfit=0;
+    for(const job of jobs){for(let d=Math.min(job.deadline,maxDeadline)-1;d>=0;d--){if(slots[d]===null){slots[d]=job;totalProfit+=job.profit;break}}}
+    renderTimeline(slots);const selected=slots.filter(Boolean);renderProfitBars(selected);
+    banner.classList.remove('error');
+    banner.innerHTML=`<strong>✅ Optimal Schedule Created</strong><br>Jobs Scheduled: <strong>${selected.length} / ${maxDeadline} slots</strong><br>Total Profit: <strong>${totalProfit}</strong><br>Services: <strong>${selected.map(j=>j.name).join(', ')||'None'}</strong>`;
+  }catch(e){banner.classList.add('error');banner.textContent='⚠ '+e.message;renderTimeline([]);renderProfitBars([]);}
+}
+
+/* ── Boot ── */
+applyScenario('emergency');
+</script>
+</body>
+</html>
